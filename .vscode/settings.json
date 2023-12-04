@@ -1,5 +1,8 @@
 {
     "files.associations": {
         "string.h": "c"
-    }
+    },
+    "editor.wordWrap": "wordWrapColumn",
+    "editor.tabSize": 2,
+    "terminal.integrated.bellDuration": 10000
 }
