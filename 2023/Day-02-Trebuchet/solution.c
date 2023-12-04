@@ -5,11 +5,10 @@
 #define MAX_LINE_LENGTH (16384)
 #define DEFAULT_INPUT_FILE "input.txt"
 
-char *rstrstr(char *s1, const int s1len, const char *s2,
-              const int s2len) {
+char *rstrstr(char *s1, const int s1len, const char *s2, const int s2len) {
   if (s2len > s1len)
     return NULL;
-  
+
   for (char *s = s1 + s1len - s2len; s >= s1; --s)
     if (strncmp(s, s2, s2len) == 0)
       return s;
