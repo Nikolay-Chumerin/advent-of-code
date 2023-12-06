@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <inttypes.h>
 #include <math.h>
 #include <stdbool.h>
@@ -9,7 +10,7 @@
 #define MAX_RACES (16)
 #define EPS (1E-8)
 
-#define DEBUG
+#define NDEBUG
 #ifdef DEBUG
 #define PUTS puts
 #define PRINTF printf
@@ -70,18 +71,44 @@ void part1(void) {
     const double sqrtD = sqrt(D);
     const double x1 = (t - sqrtD) / 2.0F;
     const double x2 = (t + sqrtD) / 2.0F;
-    const int integer_solutions_num =
-        (floor(x2 - EPS) - ceil(x1 + EPS) + 1);
+    const int integer_solutions_num = (floor(x2 - EPS) - ceil(x1 + EPS) + 1);
     ans *= integer_solutions_num;
-    PRINTF("floor(x2-EPS)=%f ceil(x1+EPS)=%-8.4f\n",
-           floor(x2 - EPS), ceil(x1 + EPS));
+    PRINTF("floor(x2-EPS)=%f ceil(x1+EPS)=%-8.4f\n", floor(x2 - EPS),
+           ceil(x1 + EPS));
     PRINTF("sqrtD=%-8.4f x1=%-8.4f x2=%-8.4f num=%d ans=%li\n", sqrtD, x1, x2,
            integer_solutions_num, ans);
   } /*  loop over races */
   printf("%ld\n", ans);
 } /* part1() */
 /******************************************************************************/
-void part2(void) {} /* part1() */
+void part2(void) {
+  typedef long double REAL;
+  typedef long long int INT;
+  INT ans = 1;
+  REAL t = 0.0;
+  REAL d = 0.0;
+
+  for (size_t race_idx = 0; race_idx < races_num; ++race_idx) {
+    const int t_ = times[race_idx];
+    t *= exp10l(ceil(log10(t_)));
+    t += t_;
+
+    const int d_ = distances[race_idx];
+    d *= exp10l(ceil(log10(d_)));
+    d += d_;
+  } /*  loop over races */
+  PRINTF("t=%Lf d=%Lf\n", t, d);
+  const REAL D = t * t - 4.0 * d;
+  if (D < 0.0) {
+    ans = 0;
+  } else {
+    const REAL sqrtD = sqrtl(D);
+    const REAL x1 = (t - sqrtD) / 2.0;
+    const REAL x2 = (t + sqrtD) / 2.0;
+    ans = (floorl(x2 - EPS) - ceill(x1 + EPS) + 1);
+  }
+  printf("%lld\n", ans);
+} /* part2() */
 /******************************************************************************/
 int main(int argc, char *argv[]) {
   file = fopen((argc > 1) ? argv[1] : DEFAULT_INPUT_FILE, "r");
