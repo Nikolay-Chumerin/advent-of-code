@@ -36,12 +36,12 @@ static const char *const HAND_TYPE_NAMES[] = {
     [FOUR_OF_A_KIND_VALUE] = "Four of a kind",
     [FIVE_OF_A_KIND_VALUE] = "Five of a kind"};
 
-
 typedef char hand_t[HAND_LEN];
 typedef struct {
   hand_t hand;
   int bid;
-  hand_value_t value;
+  hand_value_t value1;
+  hand_value_t value2;
 } hand_and_bid_t;
 
 hand_and_bid_t sets[SETS_CAPACITY];
@@ -53,6 +53,11 @@ const int CARD_TYPE_TO_INDEX[256] = {
     ['7'] = 5,  ['8'] = 6,  ['9'] = 7, ['T'] = 8, ['J'] = 9,
     ['Q'] = 10, ['K'] = 11, ['A'] = 12};
 #define CARD_TYPE_TO_VALUE(card_type_char) (CARD_TYPE_TO_INDEX[card_type_char])
+
+const int CARD_TYPE_TO_VALUE2[256] = {
+    ['2'] = 1,  ['3'] = 2,  ['4'] = 3, ['5'] = 4, ['6'] = 5,
+    ['7'] = 6,  ['8'] = 7,  ['9'] = 8, ['T'] = 9, ['J'] = 0,
+    ['Q'] = 10, ['K'] = 11, ['A'] = 12};
 
 #ifdef DEBUG
 #define PUTS puts
@@ -70,7 +75,7 @@ void trim(char *line) {
   }
 } /* trim(.) */
 /******************************************************************************/
-hand_value_t hand_value(const hand_t hand) {
+hand_value_t hand_value1(const hand_t hand) {
   char hist[CARD_TYPES_NUM];
   memset(hist, 0, sizeof(hist));
 
@@ -109,7 +114,61 @@ hand_value_t hand_value(const hand_t hand) {
     return (2 == max_count2) ? TWO_PAIRS_VALUE : ONE_PAIR_VALUE;
 
   return WRONG_VALUE;
-} /* hand_value() */
+} /* hand_value1(.) */
+/******************************************************************************/
+hand_value_t hand_value2(const hand_t hand) {
+  char hist[CARD_TYPES_NUM];
+  memset(hist, 0, sizeof(hist));
+
+  for (int i = 0; i < HAND_LEN; ++i) {
+    const char card = hand[i];
+    const size_t card_type_idx = CARD_TYPE_TO_INDEX[card];
+    ++hist[card_type_idx];
+  }
+
+  int max_count1 = 0;
+  int idx1 = -1;
+  for (int i = 0; i < CARD_TYPES_NUM; ++i) {
+    if (max_count1 < hist[i]) {
+      max_count1 = hist[i];
+      idx1 = i;
+    }
+  }
+  const size_t J_IDX = CARD_TYPE_TO_INDEX['J'];
+  int j_count1 = hist[J_IDX];
+
+  hist[idx1] = 0;
+
+  int max_count2 = 0;
+  int idx2 = -1;
+  for (int i = 0; i < CARD_TYPES_NUM; ++i) {
+    if (max_count2 < hist[i]) {
+      max_count2 = hist[i];
+      idx2 = i;
+    }
+  }
+
+  if (J_IDX == idx1) {
+    max_count1 += max_count2;
+    max_count2 = 1;
+  } else {
+    max_count1 += j_count1;
+  }
+  switch (max_count1) {
+  case 5:
+    return FIVE_OF_A_KIND_VALUE;
+  case 4:
+    return FOUR_OF_A_KIND_VALUE;
+  case 3:
+    return (2 == max_count2) ? FULL_HOUSE_VALUE : THREE_OF_A_KIND_VALUE;
+  case 2:
+    return (2 == max_count2) ? TWO_PAIRS_VALUE : ONE_PAIR_VALUE;
+  case 1:
+    return HIGH_CARD_VALUE;
+  default:
+    return WRONG_VALUE;
+  }
+} /* hand_value2(.) */
 /******************************************************************************/
 int read_input_data(const char *input_file_path) {
   PRINTF("Reading input data from the '%s' file.\n", input_file_path);
@@ -129,14 +188,15 @@ int read_input_data(const char *input_file_path) {
       sets[sets_num].hand[i] = *s++;
     }
     sets[sets_num].hand[HAND_LEN] = 0;
-    sets[sets_num].value = hand_value(sets[sets_num].hand);
+    sets[sets_num].value1 = hand_value1(sets[sets_num].hand);
+    sets[sets_num].value2 = hand_value2(sets[sets_num].hand);
     sscanf(s, "%d", &sets[sets_num].bid);
 
     const char *hand = (char *)&sets[sets_num].hand;
     const int bid = sets[sets_num].bid;
-    const hand_value_t value = sets[sets_num].value;
-    const char *type = HAND_TYPE_NAMES[value];
-    PRINTF("hand='%s' bid=%-5d value=%d type='%s'\n", hand, bid, value, type);
+    const hand_value_t value1 = sets[sets_num].value1;
+    const char *type = HAND_TYPE_NAMES[value1];
+    PRINTF("hand='%s' bid=%-5d value1=%d type='%s'\n", hand, bid, value1, type);
 
     ++sets_num;
   } /* loop over lines */
@@ -146,12 +206,12 @@ int read_input_data(const char *input_file_path) {
   return EXIT_SUCCESS;
 } /* read_input_data(.) */
 /******************************************************************************/
-int compare_two_sets(const void *a, const void *b) {
+int compare_two_sets1(const void *a, const void *b) {
   const hand_and_bid_t *hba = (hand_and_bid_t *)a;
   const hand_and_bid_t *hbb = (hand_and_bid_t *)b;
-  if (hba->value < hbb->value)
+  if (hba->value1 < hbb->value1)
     return -1;
-  if (hba->value > hbb->value)
+  if (hba->value1 > hbb->value1)
     return 1;
   for (int i = 0; i < HAND_LEN; ++i) {
     if (CARD_TYPE_TO_VALUE(hba->hand[i]) < CARD_TYPE_TO_VALUE(hbb->hand[i]))
@@ -160,24 +220,50 @@ int compare_two_sets(const void *a, const void *b) {
       return 1;
   }
   return 0;
-} /* compare_two_sets(..) */
+} /* compare_two_sets1(..) */
 /******************************************************************************/
 void solve_part1(void) {
   /* solution of the part1 */
-  qsort(sets, sets_num, sizeof(hand_and_bid_t), compare_two_sets);
+  qsort(sets, sets_num, sizeof(hand_and_bid_t), compare_two_sets1);
   int ans = 0;
   for (int i = 0; i < sets_num; ++i) {
-    const int coeff = i + 1;
-    PRINTF("i=%d coeff=%d bid=%d value=%d hand='%s'\n", i, coeff, sets[i].bid,
-           sets[i].value, sets[i].hand);
-    ans += coeff * sets[i].bid;
+    const int rank = i + 1;
+    PRINTF("i=%d rank=%d bid=%d value=%d hand='%s'\n", i, rank, sets[i].bid,
+           sets[i].value1, sets[i].hand);
+    ans += rank * sets[i].bid;
   }
   printf("%d\n", ans);
 } /* solve_part1() */
 /******************************************************************************/
+int compare_two_sets2(const void *a, const void *b) {
+  const hand_and_bid_t *hba = (hand_and_bid_t *)a;
+  const hand_and_bid_t *hbb = (hand_and_bid_t *)b;
+  if (hba->value2 < hbb->value2)
+    return -1;
+  if (hba->value2 > hbb->value2)
+    return 1;
+  for (int i = 0; i < HAND_LEN; ++i) {
+    if (CARD_TYPE_TO_VALUE2[hba->hand[i]] < CARD_TYPE_TO_VALUE2[hbb->hand[i]])
+      return -1;
+    if (CARD_TYPE_TO_VALUE2[hba->hand[i]] > CARD_TYPE_TO_VALUE2[hbb->hand[i]])
+      return 1;
+  }
+  return 0;
+} /* compare_two_sets2(..) */
+/******************************************************************************/
 void solve_part2(void) {
   /* solution of the part2 */
-  printf("%d\n", 0);
+  qsort(sets, sets_num, sizeof(hand_and_bid_t), compare_two_sets2);
+  int ans = 0;
+  for (int i = 0; i < sets_num; ++i) {
+    const int rank = i + 1;
+    const char *type = HAND_TYPE_NAMES[sets[i].value2];
+
+    PRINTF("i=%d rank=%d bid=%d value2=%d hand='%s' type='%s'\n", i, rank,
+           sets[i].bid, sets[i].value2, sets[i].hand, type);
+    ans += rank * sets[i].bid;
+  }
+  printf("%d\n", ans);
 } /* solve_part2() */
 /******************************************************************************/
 int main(int argc, char *argv[]) {
