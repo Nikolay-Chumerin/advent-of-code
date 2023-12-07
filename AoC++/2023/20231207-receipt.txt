@@ -1,0 +1,11 @@
+You paid 5,00 USD
+to Advent of Code LLCDetails
+Paid with
+KBC Mastercard Silver-9570
+5,00 USD
+This transaction will appear on your statement as PAYPAL *ADVENTOCODE
+Purchase details
+Receipt number: 21P48627B60302246
+We’ll send confirmation to: chumerin@gmail.com
+Merchant details
+Advent of Code LLC

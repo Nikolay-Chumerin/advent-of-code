@@ -1,0 +1,6 @@
+--- Supporter History ---
+You will get a supporter badge on pages related to events you've supported. You have supported Advent of Code as follows:
+
+Event   Amount   Method        Received       
+-----  --------  ------  ---------------------
+2023   5.00 USD  PayPal  2023 Dec 07  05:12:24
