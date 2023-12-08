@@ -37,8 +37,7 @@ int read_input_data(const char *input_file_path) {
   }
 
   while (true) {
-    char *_ = fgets(line, sizeof(line), file);
-    if (!_)
+    if (!fgets(line, sizeof(line), file))
       break;
     trim(line);
     PRINTF("'%s'\n", line);
