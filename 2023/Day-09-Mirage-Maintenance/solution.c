@@ -83,10 +83,9 @@ void print_seq(const seq_t *seq) {
   PRINTF("]\n");
 }
 /******************************************************************************/
-bool all_zeros(const seq_t *seq) {
+bool all_zeros(const int* data, const size_t len) {
   bool ans = true;
-  const int *data = seq->data;
-  for (size_t i = 0U; ans && (i < seq->len); ++i) ans &= (data[i] == 0);
+  for (size_t i = 0U; ans && (i < len); ++i) ans &= (data[i] == 0);
   return ans;
 } /* all_zeros(.) */
 /******************************************************************************/
@@ -105,7 +104,7 @@ void solve_part1(void) {
       }
       --diffs.len;
       print_seq(&diffs);
-    } while (!all_zeros(&diffs));
+    } while (!all_zeros(diffs.data, diffs.len));
 
     int seq_next_element = 0;
     for (size_t i = diffs.len - 1; i < seq_len; ++i) {
@@ -119,8 +118,37 @@ void solve_part1(void) {
 } /* solve_part1() */
 /******************************************************************************/
 void solve_part2(void) {
-  /* solution of the part2 */
-  printf("%d\n", 0);
+  int ans = 0;
+  seq_t diffs;
+  for (size_t seq_idx = 0U; seq_idx < seqs_num; ++seq_idx) {
+    const seq_t *seq = &seqs[seq_idx];
+    const int *data = (int *)seq->data;
+    const size_t seq_len = seq->len;
+    diffs = seqs[seq_idx];
+    print_seq(&diffs);
+    bool diffs_are_all_zeros = false;
+    size_t step = 1;
+    do {
+      for (size_t i = seq_len - 1; i >= step; --i) {
+        diffs.data[i] -= diffs.data[i - 1];
+      }
+      ++step;
+      print_seq(&diffs);
+      diffs_are_all_zeros = all_zeros(diffs.data + step, diffs.len - step);
+      PRINTF("diffs_are_all_zeros=%d\n", diffs_are_all_zeros);
+    } while (!diffs_are_all_zeros);
+
+    PRINTF("step=%lu\n", step);
+    int seq_prev_element = 0;
+    int sign = 1;
+    for (size_t i = 0; i <= seq_len - step + 1; ++i) {
+      seq_prev_element += sign * diffs.data[i];
+      sign = -sign;
+    }
+    PRINTF("seq_prev_element=%d\n", seq_prev_element);
+    ans += seq_prev_element;
+  } /* loop over sequences */
+  printf("%d\n", ans);
 } /* solve_part2() */
 /******************************************************************************/
 int main(int argc, char *argv[]) {
