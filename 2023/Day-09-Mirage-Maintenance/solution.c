@@ -79,7 +79,8 @@ int read_input_data(const char *input_file_path) {
 void print_seq(const seq_t *seq) {
   PRINTF("len=%lu [ ", seq->len);
   const int *d = seq->data;
-  for (size_t i = 0U; (i < seq->len); ++i) PRINTF("%d ", *d++);
+  for (size_t i = 0U; (i < seq->len); ++i)
+    PRINTF("%02d ", *d++);
   PRINTF("]\n");
 }
 /******************************************************************************/
@@ -127,24 +128,23 @@ void solve_part2(void) {
     diffs = seqs[seq_idx];
     print_seq(&diffs);
     bool diffs_are_all_zeros = false;
-    size_t step = 1;
+    size_t step = 0;
     do {
-      for (size_t i = seq_len - 1; i >= step; --i) {
+      for (size_t i = seq_len - 1; i > step; --i) {
         diffs.data[i] -= diffs.data[i - 1];
       }
       ++step;
       print_seq(&diffs);
       diffs_are_all_zeros = all_zeros(diffs.data + step, diffs.len - step);
-      PRINTF("diffs_are_all_zeros=%d\n", diffs_are_all_zeros);
+      // PRINTF("diffs_are_all_zeros=%d\n", diffs_are_all_zeros);
     } while (!diffs_are_all_zeros);
 
     PRINTF("step=%lu\n", step);
     int seq_prev_element = 0;
-    int sign = 1;
     for (size_t i = 0; i <= seq_len - step + 1; ++i) {
-      seq_prev_element += sign * diffs.data[i];
-      sign = -sign;
+      seq_prev_element = diffs.data[i] - seq_prev_element;
     }
+    seq_prev_element *= -1;
     PRINTF("seq_prev_element=%d\n", seq_prev_element);
     ans += seq_prev_element;
   } /* loop over sequences */
