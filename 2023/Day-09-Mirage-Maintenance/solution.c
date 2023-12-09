@@ -17,7 +17,18 @@
 #else
 #define PUTS(a) (0)
 #define PRINTF(fmt, ...) (0)
-#endif // DEBUG
+#endif  // DEBUG
+
+#define SEQUENCE_CAPACITY (1024)
+#define SEQUENCES_MAX_NUM (256)
+
+typedef struct {
+  int seq[SEQUENCE_CAPACITY];
+  size_t len;
+} seq_t;
+
+seq_t seqs[SEQUENCES_MAX_NUM];
+size_t seqs_num;
 
 /******************************************************************************/
 void trim(char *line) {
@@ -36,17 +47,28 @@ int read_input_data(const char *input_file_path) {
     return (EXIT_FAILURE);
   }
 
+  seqs_num = 0U;
   while (true) {
-    if (!fgets(line, sizeof(line), file))
-      break;
+    if (!fgets(line, sizeof(line), file)) break;
     trim(line);
     PRINTF("'%s'\n", line);
-    /* process line ... */    
+    /* process line ... */
+    int vals_read = 0;
+    int chars_read = 0;
+    char *str = line;
+    seq_t *seq = &seqs[seqs_num];
+    seq->len = 0U;
+    do {
+      vals_read = sscanf(str, "%d %n", &seq->seq[seq->len], &chars_read);
+      if (vals_read != 1) break;
+      ++seq->len;
+      str += chars_read;
+    } while (true);
+    ++seqs_num;
+    PRINTF(" Done: %lu values were read.\n", seq->len);
   } /* loop over lines */
-
   fclose(file);
-  PUTS("Input data were read.");
-
+  PRINTF("Input data (%lu sequences) were read.\n", seqs_num);
   return EXIT_SUCCESS;
 } /* read_input_data(.) */
 /******************************************************************************/
