@@ -39,7 +39,7 @@ all_tests: solution
 	done
 
 test%: solution
-	echo "Running solution on the %@.txt file as input"; \
+	@echo "Running solution using as input $@.txt"; \
 	./solution $@.txt
 
 # Run rule
