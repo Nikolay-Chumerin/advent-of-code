@@ -6,17 +6,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define STRING_CAPACITY (8192)
+#define STRING_CAPACITY (1024)
 #define DEFAULT_INPUT_FILE "input.txt"
-#define EPS (1E-8)
-#define DEBUG
 
 #ifdef DEBUG
 #define PUTS puts
 #define PRINTF printf
 #else
-#define PUTS(a) (0)
-#define PRINTF(fmt, ...) (0)
+#define PUTS(a) {}
+#define PRINTF(fmt, ...) {}
 #endif // DEBUG
 
 /******************************************************************************/
