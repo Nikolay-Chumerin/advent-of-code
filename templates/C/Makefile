@@ -1,3 +1,7 @@
+ifndef VERBOSE
+.SILENT:
+endif
+
 # Compiler flags
 CC     = gcc
 CFLAGS = -Wall -Werror -Wextra -lm
@@ -39,7 +43,7 @@ all_tests: solution
 	done
 
 test%: solution
-	echo "Running solution on the %@.txt file as input"; \
+	echo "Running solution on the $@.txt file as input"; \
 	./solution $@.txt
 
 # Run rule
