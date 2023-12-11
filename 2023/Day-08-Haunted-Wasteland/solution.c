@@ -1,7 +1,6 @@
 #define _GNU_SOURCE
-#include <inttypes.h>
-#include <math.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,8 +10,10 @@
 #define PUTS puts
 #define PRINTF printf
 #else
-#define PUTS(a) (0)
-#define PRINTF(fmt, ...) (0)
+#define PUTS(a)                                                                \
+  {}
+#define PRINTF(fmt, ...)                                                       \
+  {}
 #endif // DEBUG
 
 #define STRING_CAPACITY (512)
@@ -62,7 +63,10 @@ int read_input_data(const char *input_file_path) {
     perror("Error opening the file");
     return (EXIT_FAILURE);
   }
-  fgets(moves, sizeof(moves), file);
+  if (!fgets(moves, sizeof(moves), file)) {
+    perror("Error reading the file");
+    return (EXIT_FAILURE);
+  }
   trim(moves);
   moves_num = strlen(moves);
   PRINTF("moves='%s'\n", moves);
@@ -98,6 +102,7 @@ size_t tag_to_node_idx(const tag_t tag) {
   return UINT64_MAX;
 } /* set_node_indices() */
 /******************************************************************************/
+#ifdef DEBUG
 void print_tree(void) {
   for (size_t node_idx = 0; node_idx < tree_size; ++node_idx) {
     const node_t *node = &tree[node_idx];
@@ -106,6 +111,9 @@ void print_tree(void) {
            node->right.idx);
   } /* loop over tree nodes */
 } /* print_tree() */
+#else
+#define print_tree(_) {}
+#endif  /* DEBUG */
 /******************************************************************************/
 void set_node_indices(void) {
   for (size_t node_idx = 0; node_idx < tree_size; ++node_idx) {
@@ -130,9 +138,38 @@ void solve_part1(void) {
   printf("%lu\n", steps_num);
 } /* solve_part1() */
 /******************************************************************************/
+static uint64_t gcf(uint64_t a, uint64_t b) {
+  while (b != 0U) {
+    uint64_t temp = b;
+    b = a % b;
+    a = temp;
+  }
+  return a;
+}
+/******************************************************************************/
+static uint64_t lcm(const uint64_t a, const uint64_t b) {
+  return (a / gcf(a, b)) * b;
+}
+/******************************************************************************/
 void solve_part2(void) {
-  int ans = 0;
-  printf("%d\n", ans);
+  uint64_t ans = 1;
+  for (uint64_t node_idx = 0; node_idx < tree_size; ++node_idx) {
+    const node_t *node = &tree[node_idx];
+    if ('A' != node->tag[TAG_LEN - 1])
+      continue;
+    PRINTF("node-idx=%lu node-tag=%s\n", node_idx, node->tag);
+    uint64_t idx = node_idx;
+    uint64_t step = 0;
+    do {
+      const size_t move_idx = step % moves_num;
+      idx = ('L' == moves[move_idx]) ? tree[idx].left.idx : tree[idx].right.idx;
+      ++step;
+      PRINTF("node_idx=%lu idx=%04lu tag=%s move_idx=%lu step=%lu\n", node_idx,
+             idx, tree[idx].tag, move_idx, step);
+    } while ('Z' != tree[idx].tag[TAG_LEN - 1]);
+    ans = lcm(ans, step);
+  } /* loop over nodes */
+  printf("%lu\n", ans);
 } /* solve_part2() */
 /******************************************************************************/
 int main(int argc, char *argv[]) {
@@ -145,6 +182,5 @@ int main(int argc, char *argv[]) {
   print_tree();
   solve_part1();
   solve_part2();
-
   return EXIT_SUCCESS;
 }
