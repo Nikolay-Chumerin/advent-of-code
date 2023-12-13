@@ -39,6 +39,7 @@ row_t rows[ROWS_CAPACITY];
 idx_t rows_num = 0U;
 row_t row;
 idx_t nums[ROWS_CAPACITY];
+idx_t counts[5][ROWS_CAPACITY];
 
 /******************************************************************************/
 void line2row(const char *line, row_t *out_row) {
@@ -126,18 +127,22 @@ size_t count(void) {
   idx_t damaged_target_num = 0;
   for (idx_t i = 0; i < row.groups.size; ++i)
     damaged_target_num += row.groups.data[i];
+  const idx_t operational_target_num = row.springs.size - damaged_target_num;
 
   idx_t damaged_num = 0;
-  for (idx_t i = 0; i < row.springs.size; ++i)
-    damaged_num += ('#' == row.springs.data[i]);
+  idx_t operational_num = 0;
+  for (idx_t i = 0; i < row.springs.size; ++i) {
+    const val_t c = row.springs.data[i];
+    damaged_num += ('#' == c);
+    operational_num += ('.' == c);
+  }
 
   idx_t groups_num = 0;
   for (idx_t i = 0; i < row.springs.size; ++i)
     groups_num += ('#' == row.springs.data[i]) &&
                   ((i == 0) || ('#' != row.springs.data[i - 1]));
 
-  state_t state = {
-      .spring_idx = 0, .group_idx = -1, .group_size = 0}; //, .damaged_num = 0};
+  state_t state = {.spring_idx = 0, .group_idx = -1, .group_size = 0};
   while (true) {
     backtrack = false;
     /* Scan the current sping-array until next '?'.
@@ -146,31 +151,30 @@ size_t count(void) {
                            ('#' == row.springs.data[state.spring_idx - 1]);
     while ((state.spring_idx < row.springs.size) &&
            '?' != row.springs.data[state.spring_idx]) {
-      const bool spring_is_damaged =
-          ('#' == row.springs.data[state.spring_idx]);
-      if (spring_is_damaged && !prev_is_damaged) {
+      const bool curr_is_damaged = ('#' == row.springs.data[state.spring_idx]);
+      if (curr_is_damaged && !prev_is_damaged) {
         ++state.group_idx;
-        if (state.group_size || (state.group_idx >= row.groups.size)) {
-          backtrack = true;
+        backtrack |= state.group_size || (state.group_idx >= row.groups.size);
+        if (backtrack)
           break;
-        }
         state.group_size = row.groups.data[state.group_idx];
       } /* new group found branch */
 
-      state.group_size -= spring_is_damaged;
-      if (state.group_size < 0) {
-        backtrack = true;
+      state.group_size -= curr_is_damaged;
+      backtrack |= (state.group_size < 0);
+      if (backtrack)
         break;
-      }
-      prev_is_damaged = spring_is_damaged;
+
+      prev_is_damaged = curr_is_damaged;
       ++state.spring_idx;
     } /* '?'-search loop */
 
     const bool too_many_damaged = (damaged_num > damaged_target_num);
+    const bool too_many_operational =
+        (operational_num > operational_target_num);
     const bool all_springs_scanned = (state.spring_idx >= row.springs.size);
-    if (all_springs_scanned || too_many_damaged) {
-      backtrack = true;
-    }
+    backtrack |=
+        all_springs_scanned || too_many_damaged || too_many_operational;
     const bool all_groups_fit =
         (state.group_size == 0) && (state.group_idx == (row.groups.size - 1));
     if (all_springs_scanned && all_groups_fit) {
@@ -194,17 +198,22 @@ size_t count(void) {
       case '#':
         row.springs.data[state.spring_idx] = '.';
         --damaged_num;
+        ++operational_num;
         stack[stack_size++] = state;
         backtrack = false;
         break;
       case '.':
         row.springs.data[state.spring_idx] = '?';
+        --operational_num;
         backtrack = true;
         break;
       }
-      PRINTF("spring_idx=%-6ld spring='%s' ans=%-6lu damaged_num=%-6ld\n",
-             state.spring_idx, row.springs.data, ans, state.damaged_num);
+      PRINTF("spring_idx=%-6ld spring='%s' ans=%-6lu damaged_num=%-3ld "
+             "operational_num=%-3ld\n",
+             state.spring_idx, row.springs.data, ans, damaged_num,
+             operational_num);
       backtrack |= (damaged_num > damaged_target_num);
+      backtrack |= (operational_num > operational_target_num);
     } while (backtrack);
   } /* main loop  */
   return ans;
@@ -215,7 +224,7 @@ void solve_part1(void) {
   for (idx_t i = 0; i < rows_num; ++i) {
     row = rows[i];
     const size_t num = count();
-    nums[i] = num;
+    counts[0][i] = num;
     ans += num;
     // printf("i=%04lu num=%-10lu ans=%-10lu\n", i, num, ans);
   }
@@ -232,27 +241,28 @@ void unfold_array(const size_t times, array_t *arr) {
   arr->size *= times;
 } /* unfold_array(..) */
 /******************************************************************************/
+void unfold_row(const size_t times, row_t *row) {
+  row->springs.data[row->springs.size++] = '?';
+  unfold_array(times, &row->springs);
+  row->springs.data[row->springs.size - 1] = '\0';
+  unfold_array(times, &row->groups);
+} /* unfold_row(..) */
+/******************************************************************************/
 void unfold_rows(const size_t times) {
   for (idx_t i = 0; i < rows_num; ++i) {
-    rows[i].springs.data[rows[i].springs.size++] = '?';
-    unfold_array(times, &rows[i].springs);
-    rows[i].springs.data[rows[i].springs.size - 1] = '\0';
-    unfold_array(times, &rows[i].groups);
+    unfold_row(times, &rows[i]);
   } /* loop over rows */
 } /* unfold_rows(.) */
 /******************************************************************************/
 void solve_part2(void) {
-  unfold_rows(2);
+  // unfold_rows(2);
   size_t ans = 0;
   for (idx_t i = 0; i < rows_num; ++i) {
-    row = rows[i];
-    size_t num2 = count();
-    const size_t scaler = num2 / nums[i];
-    const size_t num5 = num2 * scaler * scaler * scaler;
-    ans += num5;
-    printf("i=%04lu num1=%-14lu -> num2=%-14lu -> num5=%-14lu  "
-           "ans=%-14lu\n",
-           i, nums[i], num2, num5, ans);
+    row = rows[i];    
+    unfold_row(5, &row);
+    counts[4][i] = count();
+    ans += counts[4][i];
+    printf("%-4lu %-10lu\n", i, counts[4][i]);
   }
   printf("%lu\n", ans);
 } /* solve_part2() */
