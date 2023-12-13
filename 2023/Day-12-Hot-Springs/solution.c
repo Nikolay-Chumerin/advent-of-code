@@ -38,6 +38,7 @@ typedef struct {
 row_t rows[ROWS_CAPACITY];
 idx_t rows_num = 0U;
 row_t row;
+idx_t nums[ROWS_CAPACITY];
 
 /******************************************************************************/
 void line2row(const char *line, row_t *out_row) {
@@ -130,6 +131,11 @@ size_t count(void) {
   for (idx_t i = 0; i < row.springs.size; ++i)
     damaged_num += ('#' == row.springs.data[i]);
 
+  idx_t groups_num = 0;
+  for (idx_t i = 0; i < row.springs.size; ++i)
+    groups_num += ('#' == row.springs.data[i]) &&
+                  ((i == 0) || ('#' != row.springs.data[i - 1]));
+
   state_t state = {
       .spring_idx = 0, .group_idx = -1, .group_size = 0}; //, .damaged_num = 0};
   while (true) {
@@ -209,8 +215,9 @@ void solve_part1(void) {
   for (idx_t i = 0; i < rows_num; ++i) {
     row = rows[i];
     const size_t num = count();
+    nums[i] = num;
     ans += num;
-    printf("i=%04lu num=%-10lu ans=%-10lu\n", i, num, ans);
+    // printf("i=%04lu num=%-10lu ans=%-10lu\n", i, num, ans);
   }
   printf("%lu\n", ans);
 } /* solve_part1() */
@@ -235,13 +242,17 @@ void unfold_rows(const size_t times) {
 } /* unfold_rows(.) */
 /******************************************************************************/
 void solve_part2(void) {
-  unfold_rows(5LU);
+  unfold_rows(2);
   size_t ans = 0;
   for (idx_t i = 0; i < rows_num; ++i) {
     row = rows[i];
-    const size_t num = count();
-    ans += num;
-    printf("i=%04lu num=%-10lu ans=%-10lu\n", i, num, ans);
+    size_t num2 = count();
+    const size_t scaler = num2 / nums[i];
+    const size_t num5 = num2 * scaler * scaler * scaler;
+    ans += num5;
+    printf("i=%04lu num1=%-14lu -> num2=%-14lu -> num5=%-14lu  "
+           "ans=%-14lu\n",
+           i, nums[i], num2, num5, ans);
   }
   printf("%lu\n", ans);
 } /* solve_part2() */
