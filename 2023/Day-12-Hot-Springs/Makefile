@@ -19,7 +19,7 @@ DBGCFLAGS = -g -O0 -DDEBUG
 # Release build settings
 RELCFLAGS = -O3 -DNDEBUG
 
-.PHONY: all clean debug prep release run remake all_tests test%
+.PHONY: all clean debug prep release run remake all_tests test% input part%
 
 # Default build
 all: release
@@ -46,10 +46,21 @@ test%: solution
 	echo "Running solution on the $@.txt file as input"; \
 	./solution $@.txt
 
+part%: solution
+	echo "Running solution on the $@.txt file as input"; \
+	./solution $@.txt
+
+
 # Run rule
-run: solution input.txt
+input: solution input.txt
 	echo "Running soluiton on the input.txt file as input"; \
 	./solution input.txt
+
+# # Run rule
+# run: solution input.txt
+# 	echo "Running soluiton on the input.txt file as input"; \
+# 	./solution input.txt
+
 
 clean:
 	rm -rf *.o solution
