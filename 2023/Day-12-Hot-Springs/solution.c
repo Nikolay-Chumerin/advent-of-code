@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define STRING_CAPACITY (256)
+#define STRING_CAPACITY (1024)
 #define DEFAULT_INPUT_FILE "input.txt"
 
 #ifdef DEBUG
@@ -18,7 +18,7 @@
   {}
 #endif // DEBUG
 
-#define ARR_CAPACITY (32)
+#define ARR_CAPACITY (1024)
 #define ROWS_CAPACITY (1024)
 
 typedef char val_t;
@@ -36,7 +36,7 @@ typedef struct {
 
 row_t rows[ROWS_CAPACITY];
 size_t rows_num = 0U;
-row_t *row;
+row_t row;
 
 /******************************************************************************/
 void line2row(const char *line, row_t *out_row) {
@@ -110,68 +110,119 @@ int read_input_data(const char *input_file_path) {
 } /* read_input_data(.) */
 /******************************************************************************/
 size_t count(size_t spring_idx) {
-  // print_row(row);
-  while ((spring_idx < row->springs.size) &&
-         (row->springs.data[spring_idx] != '?'))
+
+  char *p = row.springs.data;
+  int group_idx = -1;
+  int group_size = 0;
+  char prev = '.';
+  for (size_t i = 0; i < spring_idx; ++i) {
+    const char c = row.springs.data[i];
+    if ('#' == c && '#' != prev) {
+      ++group_idx;
+      if (group_size || (group_idx >= row.groups.size))
+        return 0;
+      group_size = (int)row.groups.data[group_idx];
+    }
+
+    if ('#' == c)
+      --group_size;
+
+    if (group_size < 0) {
+      return 0;
+    }
+    prev = c;
+  }
+
+  while ((spring_idx < row.springs.size) &&
+         ('?' != row.springs.data[spring_idx]))
     ++spring_idx;
 
-  if (spring_idx < row->springs.size) {
+  if (spring_idx < row.springs.size && '?' == row.springs.data[spring_idx]) {
     size_t ans = 0U;
     size_t cnt;
 
-    row->springs.data[spring_idx] = '#';
+    row.springs.data[spring_idx] = '#';
     cnt = count(spring_idx + 1);
     ans += cnt;
     if (cnt) {
-      PRINTF("sprint_idx=%-3lu cnt=%-3lu ans=%-3lu ", spring_idx, cnt, ans);
-      print_row(row);
+      PRINTF("sprint_idx=%-3lu cnt=%-5lu ans=%-4lu ", spring_idx, cnt, ans);
+      print_row(&row);
     }
 
-    row->springs.data[spring_idx] = '.';
+    // row.springs.data[spring_idx] = '.';
+    p = row.springs.data + spring_idx;
+    *p = '.';
+
     cnt = count(spring_idx + 1);
     ans += cnt;
     if (cnt) {
-      PRINTF("sprint_idx=%-3lu cnt=%-3lu ans=%-3lu ", spring_idx, cnt, ans);
-      print_row(row);
+      PRINTF("sprint_idx=%-3lu cnt=%-5lu ans=%-4lu ", spring_idx, cnt, ans);
+      print_row(&row);
     }
-    row->springs.data[spring_idx] = '?';
+    row.springs.data[spring_idx] = '?';
     return ans;
   }
-  char *p = row->springs.data;
-  for (size_t group_idx = 0U; group_idx < row->groups.size; ++group_idx) {
-    int group = row->groups.data[group_idx];
-    while ('.' == *p)
+
+  p = row.springs.data;
+  for (size_t group_idx = 0U; group_idx < row.groups.size; ++group_idx) {
+    int group = row.groups.data[group_idx];
+    while (*p && '#' != *p)
       ++p;
-    while (*p && group && '#' == *p) {
+    while (group && '#' == *p) {
       ++p;
       --group;
     }
-    if (group || (*p == '#'))
-      return 0U;
+    if (group || ('#' == *p))
+      return 0;
   }
+
   while (*p) {
-    if ('.' != *p++)
-      return 0U;
+    if ('#' == *p++)
+      return 0;
   }
-  return 1U;
+
+  return 1;
 } /* count(..) */
 /******************************************************************************/
 void solve_part1(void) {
-  /* solution of the part1 */
   size_t ans = 0U;
   for (size_t i = 0U; i < rows_num; ++i) {
-    row = rows + i;
+    row = rows[i];
     const size_t num = count(0U);
     ans += num;
-    // print_row(row);
-    // PRINTF("num=%lu  ans=%lu\n", num, ans);
   }
   printf("%lu\n", ans);
 } /* solve_part1() */
 /******************************************************************************/
+void unfold_array(const size_t times, array_t *arr) {
+  const size_t beg = arr->size;
+  const size_t end = beg * times;
+  const size_t dif = beg;
+  for (size_t j = beg; j < end; ++j)
+    arr->data[j] = arr->data[j - dif];
+  arr->data[end] = 0;
+  arr->size *= times;
+} /* unfold_array(..) */
+/******************************************************************************/
+void unfold_rows(const size_t times) {
+  for (size_t i = 0LU; i < rows_num; ++i) {
+    rows[i].springs.data[rows[i].springs.size++] = '?';
+    unfold_array(times, &rows[i].springs);
+    rows[i].springs.data[rows[i].springs.size-1] = '\0';
+    unfold_array(times, &rows[i].groups);
+  } /* loop over rows */
+} /* unfold_rows(.) */
+/******************************************************************************/
 void solve_part2(void) {
-  /* solution of the part2 */
-  printf("%d\n", 0);
+  unfold_rows(5LU);
+  size_t ans = 0;
+  for (size_t i = 0; i < rows_num; ++i) {
+    row = rows[i];
+    const size_t num = count(0);
+    ans += num;
+    printf("i=%04lu %lu\n", i, ans);
+  }
+  printf("%lu\n", ans);
 } /* solve_part2() */
 /******************************************************************************/
 int main(int argc, char *argv[]) {
