@@ -4,10 +4,26 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug",
-      "program": "${workspaceFolder}/",
-      "args": [],
-      "cwd": "${workspaceFolder}"
+      "name": "Debug [test0]",
+      "program": "${fileDirname}/solution",
+      "args": ["test0.txt"],
+      "cwd": "${fileDirname}",
+      "linux": {
+        "MIMode": "gdb",
+        "miDebuggerPath": "/usr/bin/gdb"
+      },
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug [test1]",
+      "program": "${fileDirname}/solution",
+      "args": ["test1.txt"],
+      "cwd": "${fileDirname}",
+      "linux": {
+        "MIMode": "gdb",
+        "miDebuggerPath": "/usr/bin/gdb"
+      },
     },
     {
       "name": "C/C++ Runner: Debug Session",
@@ -20,13 +36,11 @@
       "program": "/home/nch8889/git/advent-of-code/2023/Day-12-Hot-Springs/solution",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
-      "setupCommands": [
-        {
-          "description": "Enable pretty-printing for gdb",
-          "text": "-enable-pretty-printing",
-          "ignoreFailures": true
-        }
-      ]
+      "setupCommands": [{
+        "description": "Enable pretty-printing for gdb",
+        "text": "-enable-pretty-printing",
+        "ignoreFailures": true
+      }]
     }
   ]
 }

@@ -36,13 +36,13 @@ debug: $(SRCS)
 	gcc $(SRCS) $(DBGCFLAGS) -o $(EXE)
 
 # Test rules
-all_tests: solution
+all_tests: solution debug
 	for i in $(TEST_FILES); do \
 		echo "Running solution on the $$i file as input"; \
 		./solution $$i; \
 	done
 
-test%: solution
+test%: solution debug
 	echo "Running solution on the $@.txt file as input"; \
 	./solution $@.txt
 
