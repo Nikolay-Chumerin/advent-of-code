@@ -19,7 +19,7 @@ DBGCFLAGS = -g -O0 -DDEBUG
 # Release build settings
 RELCFLAGS = -O3 -DNDEBUG
 
-.PHONY: all clean debug prep release run remake all_tests test%
+.PHONY: all clean debug prep release run remake all_tests test% input part%
 
 # Default build
 all: release
@@ -36,20 +36,26 @@ debug: $(SRCS)
 	gcc $(SRCS) $(DBGCFLAGS) -o $(EXE)
 
 # Test rules
-all_tests: solution
+all_tests: solution debug
 	for i in $(TEST_FILES); do \
 		echo "Running solution on the $$i file as input"; \
 		./solution $$i; \
 	done
 
-test%: solution
+test%: solution debug
 	echo "Running solution on the $@.txt file as input"; \
 	./solution $@.txt
 
-# Run rule
-run: solution input.txt
+part%: solution
+	echo "Running solution on the $@.txt file as input"; \
+	./solution $@.txt
+
+
+# Run on input.txt rule
+input: solution input.txt
 	echo "Running soluiton on the input.txt file as input"; \
 	./solution input.txt
+
 
 clean:
 	rm -rf *.o solution
