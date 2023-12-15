@@ -23,6 +23,8 @@ typedef struct {
   idx_t height;
   hash_t row_hashes[MAX_HEIGHT];
   hash_t col_hashes[MAX_WIDTH];
+  idx_t hor_mirr_pos;
+  idx_t ver_mirr_pos;
 } valley_t;
 
 valley_t valley;
@@ -47,9 +49,13 @@ void trim(char *line) {
 /******************************************************************************/
 #ifdef DEBUG
 void print_valley(void) {
+
   for (idx_t i = 0; i < valley.height; ++i) {
     PRINTF("%s\n", valley.pattern[i]);
   } /* loop over rows */
+  PRINTF("hor_mirr_pos=%d  ver_mirr_pos=%d\n", valley.hor_mirr_pos,
+         valley.ver_mirr_pos);
+  PRINTF("width=%d  height=%d\n", valley.width, valley.height);
 } /* print_valley() */
 #else
 #define print_valley(_)                                                        \
@@ -93,7 +99,8 @@ void compute_hashes(void) {
 /******************************************************************************/
 void read_next_valey(void) {
   char line[STRING_CAPACITY];
-  valley.width = valley.height = 0;
+  valley.width = 0;
+  valley.height = 0;
   while (true) {
     if (!fgets(line, sizeof(line), file))
       break;
@@ -104,7 +111,9 @@ void read_next_valey(void) {
     if (valley.width <= 0) {
       valley.width = line_len;
     }
-    memmove(&valley.pattern[valley.height][0], line, valley.width);
+    memmove(&valley.pattern[valley.height][0], line,
+            valley.width * sizeof(char));
+    valley.pattern[valley.height][valley.width] = 0;
     ++valley.height;
   } /* loop over lines */
 } /* read_next_valey() */
@@ -155,21 +164,24 @@ void solve_part1(void) {
     PRINTF("-----------------------------\n\n");
     print_valley();
     compute_hashes();
-    const idx_t hor_mirror_pos = horizontal_mirror_position();
-    const idx_t ver_mirror_pos = vertical_mirror_position();
-    ans += 100 * hor_mirror_pos + ver_mirror_pos;
-    PRINTF("hor_mirror_pos=%d ver_mirror_pos=%d ans=%d\n", hor_mirror_pos,
-           ver_mirror_pos, ans);
+    const idx_t hor_mirr_pos = horizontal_mirror_position();
+    const idx_t ver_mirr_pos = vertical_mirror_position();
+    ans += 100 * hor_mirr_pos + ver_mirr_pos;
+    PRINTF("hor_mirr_pos=%d ver_mirr_pos=%d ans=%d\n", hor_mirr_pos,
+           ver_mirr_pos, ans);
   }
   close_file();
   printf("%d\n", ans);
 } /* solve_part1() */
 /******************************************************************************/
-bool fix_horizontal_smudge(void) {
+idx_t fix_horizontal_smudge(void) {
   idx_t smudge_row = -1;
   idx_t smudge_col = -1;
+  idx_t smudges_num = 0;
 
   for (idx_t row_idx = 1; row_idx < valley.height; ++row_idx) {
+    if (valley.hor_mirr_pos == row_idx)
+      continue;
     const int max_shift =
         (row_idx <= valley.height / 2) ? row_idx : valley.height - row_idx;
     idx_t diff_bits_num = 0;
@@ -179,6 +191,8 @@ bool fix_horizontal_smudge(void) {
       const hash_t hash1 = valley.row_hashes[idx1];
       const hash_t hash2 = valley.row_hashes[idx2];
       hash_t hash_xor = hash1 ^ hash2;
+      if (!hash_xor)
+        continue;
       for (idx_t bit_idx = 0; bit_idx < valley.width; ++bit_idx) {
         if (hash_xor & 1) {
           ++diff_bits_num;
@@ -188,21 +202,28 @@ bool fix_horizontal_smudge(void) {
         hash_xor >>= 1;
       } /* loop over bits in hash_xor */
     }   /* loop over shifts */
-    if (diff_bits_num == 1) {
-      PRINTF("Fixing (horizontal) smudge at [%d,%d]\n", smudge_row, smudge_col);
-      valley.pattern[smudge_row][smudge_col] =
-          ('.' == valley.pattern[smudge_row][smudge_col]) ? '#' : '.';
-      return true;
+    if (1 == diff_bits_num) {
+      if (!smudges_num) {
+        PRINTF("Fixing (horizontal) smudge at [%d,%d]\n", smudge_row,
+               smudge_col);
+        valley.pattern[smudge_row][smudge_col] =
+            ('.' == valley.pattern[smudge_row][smudge_col]) ? '#' : '.';
+      }
+      ++smudges_num;
+      // return true;
     }
   } /* loop over candidate-rows */
-  return false;
+  PRINTF("smudges_num=%d\n", smudges_num);
+  return smudges_num;
 } /* fix_horizontal_smudge() */
 /******************************************************************************/
-void fix_vertical_smudge(void) {
+idx_t fix_vertical_smudge(void) {
   idx_t smudge_row = -1;
   idx_t smudge_col = -1;
-
+  idx_t smudges_num = 0;
   for (idx_t col_idx = 1; col_idx < valley.width; ++col_idx) {
+    if (valley.ver_mirr_pos == col_idx)
+      continue;
     const int max_shift =
         (col_idx <= valley.width / 2) ? col_idx : valley.width - col_idx;
     idx_t diff_bits_num = 0;
@@ -212,7 +233,9 @@ void fix_vertical_smudge(void) {
       const hash_t hash1 = valley.col_hashes[idx1];
       const hash_t hash2 = valley.col_hashes[idx2];
       hash_t hash_xor = hash1 ^ hash2;
-      for (idx_t bit_idx = 0; bit_idx < valley.width; ++bit_idx) {
+      if (!hash_xor)
+        continue;
+      for (idx_t bit_idx = 0; bit_idx < valley.height; ++bit_idx) {
         if (hash_xor & 1) {
           ++diff_bits_num;
           smudge_col = idx1;
@@ -221,13 +244,18 @@ void fix_vertical_smudge(void) {
         hash_xor >>= 1;
       } /* loop over bits in hash_xor */
     }   /* loop over shifts */
-    if (diff_bits_num == 1) {
-      PRINTF("Fixing (vertical) smudge at [%d,%d]\n", smudge_row, smudge_col);
-      valley.pattern[smudge_row][smudge_col] =
-          ('.' == valley.pattern[smudge_row][smudge_col]) ? '#' : '.';
-      return;
+    if (1 == diff_bits_num) {
+      if (!smudges_num) {
+        PRINTF("Fixing (vertical) smudge at [%d,%d]\n", smudge_row, smudge_col);
+        valley.pattern[smudge_row][smudge_col] =
+            ('.' == valley.pattern[smudge_row][smudge_col]) ? '#' : '.';
+      }
+      ++smudges_num;
+      // return;
     }
   } /* loop over candidate-rows */
+  PRINTF("smudges_num=%d\n", smudges_num);
+  return smudges_num;
 } /* fix_vertical_smudge() */
 /******************************************************************************/
 void solve_part2(void) {
@@ -241,16 +269,78 @@ void solve_part2(void) {
       break;
     PRINTF("-----------------------------\n\n");
     compute_hashes();
-    if (!fix_horizontal_smudge())
-      fix_vertical_smudge();
-    compute_hashes();
+    valley.hor_mirr_pos = horizontal_mirror_position();
+    valley.ver_mirr_pos = vertical_mirror_position();
     print_valley();
-    const idx_t hor_mirror_pos = horizontal_mirror_position();
-    const idx_t ver_mirror_pos =
-        (!hor_mirror_pos) ? vertical_mirror_position() : 0;
-    ans += 100 * hor_mirror_pos + ver_mirror_pos;
-    PRINTF("hor_mirror_pos=%d ver_mirror_pos=%d ans=%d\n", hor_mirror_pos,
-           ver_mirror_pos, ans);
+
+    idx_t hor_mirr_pos = 0;
+    idx_t ver_mirr_pos = 0;
+
+    const valley_t temp = valley;
+    idx_t ver_smudges_num = 0;
+    idx_t hor_smudges_num = fix_horizontal_smudge();
+    compute_hashes();
+    if (hor_smudges_num) {
+      PUTS("after fixing horizontal smudge");
+      print_valley();
+
+      hor_mirr_pos = horizontal_mirror_position();
+      // if (hor_mirr_pos && (valley.hor_mirr_pos == hor_mirr_pos)) {
+      //   // puts("valley.hor_mirr_pos == hor_mirr_pos!!!");
+      //   hor_mirr_pos = 0;
+      // }
+    }
+
+    if (!hor_mirr_pos || !hor_smudges_num) {
+      valley = temp;
+      ver_smudges_num = fix_vertical_smudge();
+      compute_hashes();
+      if (ver_smudges_num) {
+        PUTS("after fixing vertical smudge");
+        print_valley();
+        ver_mirr_pos = vertical_mirror_position();
+        // if (ver_mirr_pos && (valley.ver_mirr_pos == ver_mirr_pos)) {
+        //   // puts("valley.ver_mirr_pos == ver_mirr_pos!!!");
+        //   ver_mirr_pos = 0;
+        // }
+      }
+    }
+    if (!hor_mirr_pos && !ver_mirr_pos) {
+      printf("hor_mirr_pos=%d ver_mirr_pos=%d  valley.hor_mirr_pos=%d "
+             "valley.ver_mirr_pos=%d \n",
+             hor_mirr_pos, ver_mirr_pos, valley.hor_mirr_pos,
+             valley.ver_mirr_pos);
+    }
+    PRINTF("hor_smudges_num=%d ver_smudges_num=%d\n", hor_smudges_num,
+           ver_smudges_num);
+    PRINTF("total_smudges_num=%d\n", hor_smudges_num + ver_smudges_num);
+
+    // PRINTF("hor_mirr_pos=%d\n", hor_mirr_pos);
+    // if (!hor_mirr_pos || (hor_mirror_pos_orig == hor_mirr_pos)) {
+    //   valley = temp;
+    //   hor_mirr_pos = 0;
+    //   fix_vertical_smudge();
+    //   compute_hashes();
+    //   ver_mirr_pos = vertical_mirror_position();
+    // }
+    // if (ver_mirror_pos_orig == ver_mirr_pos)
+    //   ver_mirr_pos = 0;
+
+    // if (!hor_mirr_pos && !ver_mirr_pos) {
+    //   PRINTF("hor_mirr_pos=%d ver_mirr_pos=%d ans=%d\n", hor_mirr_pos,
+    //          ver_mirr_pos, ans);
+    //   return;
+    // }
+    // 40976
+    // 27376
+    // 27200
+    // 27364
+    // 27372
+    // 29684
+    // 37353
+    ans += 100 * hor_mirr_pos + ver_mirr_pos;
+    PRINTF("hor_mirr_pos=%d ver_mirr_pos=%d ans=%d\n", hor_mirr_pos,
+           ver_mirr_pos, ans);
   }
   close_file();
   printf("%d\n", ans);

@@ -26,6 +26,18 @@
       },
     },
     {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug [test2]",
+      "program": "${fileDirname}/solution",
+      "args": ["test2.txt"],
+      "cwd": "${fileDirname}",
+      "linux": {
+        "MIMode": "gdb",
+        "miDebuggerPath": "/usr/bin/gdb"
+      },
+    },
+    {
       "name": "C/C++ Runner: Debug Session",
       "type": "cppdbg",
       "request": "launch",
