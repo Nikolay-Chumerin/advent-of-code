@@ -18,6 +18,14 @@
 #endif // DEBUG
 
 /******************************************************************************/
+#ifdef DEBUG
+void print_data(void) {
+  /* */ 
+} /* print_data() */
+#else
+#define print_data(_) {}
+#endif  /* DEBUG */
+/******************************************************************************/
 void trim(char *line) {
   int line_len = strlen(line);
   while (line_len && (line[line_len - 1] <= ' ')) {
@@ -33,7 +41,6 @@ int read_input_data(const char *input_file_path) {
     perror("Error opening the file");
     return (EXIT_FAILURE);
   }
-
   while (true) {
     if (!fgets(line, sizeof(line), file))
       break;
@@ -41,10 +48,8 @@ int read_input_data(const char *input_file_path) {
     PRINTF("'%s'\n", line);
     /* process line ... */    
   } /* loop over lines */
-
   fclose(file);
   PUTS("Input data were read.");
-
   return EXIT_SUCCESS;
 } /* read_input_data(.) */
 /******************************************************************************/
