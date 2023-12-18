@@ -22,7 +22,7 @@ the reindeer brings you a book titled "Initialization Manual".
 
 "Hello!", the book cheerfully begins, apparently unaware of the concerned
 reindeer reading over your shoulder. "This procedure will let you bring the
-Lava Production Facility online - all without burning or melting anything
+Lava Production Facility online - all without burning or melting anything 
 unintended!"
 
 "Before you begin, please be prepared to use the Holiday ASCII String Helper

@@ -6,10 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define STRING_CAPACITY (128)
+#define STRING_CAPACITY (32768)
 #define DEFAULT_INPUT_FILE "input.txt"
-#define ROWS_MAX_NUM (128)
-#define COLS_MAX_NUM (128)
 
 #ifdef DEBUG
 #define PUTS puts
@@ -20,6 +18,8 @@
 #define PRINTF(fmt, ...)                                                       \
   {}
 #endif // DEBUG
+
+char s[STRING_CAPACITY];
 
 /******************************************************************************/
 #ifdef DEBUG
@@ -36,6 +36,16 @@ void trim(char *line) {
   }
 } /* trim(.) */
 /******************************************************************************/
+int hash(char *s) {
+  int h = 0;
+  while (*s) {
+    h += *s++;
+    h *= 17;
+    h %= 256;
+  }
+  return h;
+} /* hash(.) */
+/******************************************************************************/
 int read_input_data(const char *input_file_path) {
   PRINTF("Reading input data from the '%s' file.\n", input_file_path);
   FILE *file = fopen(input_file_path, "r");
@@ -45,11 +55,9 @@ int read_input_data(const char *input_file_path) {
   }
   while (true) {
     // // char *line = &dish[rows_num][0];
-    // if (!fgets(line, COLS_MAX_NUM, file))
-    //   break;
-    // trim(line);
-    // ++rows_num;
-    // PRINTF("'%s'\n", line);
+    if (!fgets(s, sizeof(s), file))
+      break;
+    trim(s);
   } /* loop over lines */
   // cols_num = strlen(&dish[0][0]);
   fclose(file);
@@ -58,8 +66,22 @@ int read_input_data(const char *input_file_path) {
 } /* read_input_data(.) */
 /******************************************************************************/
 void solve_part1(void) {
-  /* solution of the part1 */
-  printf("%d\n", 0);
+  int ans = 0;
+  char* p = s;
+  int h = 0;
+  while (*p) {
+    if (',' == *p) {
+      ans += h;
+      h = 0;
+      ++p;
+      continue;
+    }
+    h += *p++;
+    h *= 17;
+    h %= 256;
+  }
+  ans += h;
+  printf("%d\n", ans);
 } /* solve_part1() */
 /******************************************************************************/
 void solve_part2(void) { printf("%d\n", 0); } /* solve_part2() */
