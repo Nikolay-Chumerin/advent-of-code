@@ -106,8 +106,8 @@ HASH algorithm is working.
 
 The book goes on to describe a series of 256 boxes numbered 0 through 255. The
 boxes are arranged in a line starting from the point where light enters the
-facility. The boxes have holes that allow light to pass from one box to the
-next all the way down the line.
+facility. The boxes have holes that allow light to pass from one box to thenext
+all the way down the line.
 
       +-----+  +-----+         +-----+
 Light | Box |  | Box |   ...   | Box |
@@ -219,7 +219,7 @@ At the end of the above example, the focusing power of each lens is as follows:
  - ab: 4 (box 3) * 2 (second slot) * 5 (focal length) = 40
  - pc: 4 (box 3) * 3 (third slot) * 6 (focal length) = 72
 
-\So, the above example ends up with a total focusing power of 145.
+So, the above example ends up with a total focusing power of 145.
 
 With the help of an over-enthusiastic reindeer in a hard hat, follow the
 initialization sequence. What is the focusing power of the resulting lens
