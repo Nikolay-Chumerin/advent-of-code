@@ -36,9 +36,10 @@ cell_t stack[MAX_ROWS_NUM * MAX_COLS_NUM];
 size_t stack_size = 0;
 size_t rows_num = 0;
 size_t cols_num = 0;
-char map[MAX_ROWS_NUM][MAX_COLS_NUM] = {0};
+typedef char map_t[MAX_ROWS_NUM][MAX_COLS_NUM];
+map_t original_map, map;
+
 bool energized[MAX_ROWS_NUM][MAX_COLS_NUM] = {false};
-int beams[MAX_ROWS_NUM][MAX_COLS_NUM] = {0};
 cell_t beam;
 
 /******************************************************************************/
@@ -87,7 +88,7 @@ int read_input_data(const char *input_file_path) {
   }
   rows_num = 0;
   while (true) {
-    char *line = map[rows_num];
+    char *line = original_map[rows_num];
     if (!fgets(line, MAX_COLS_NUM, file))
       break;
     const size_t len = trim(line);
@@ -162,9 +163,10 @@ int count_energized(void) {
   return ans;
 } /* count_energized() */
 /******************************************************************************/
-void solve_part1(void) {
+int solve_for_beam(const cell_t start_beam) {
+  beam = start_beam;
   memset(energized, false, sizeof(energized));
-  beam = (cell_t){.row = 0, .col = 0, .dir = DIR_RIGHT};
+  memcpy(map, original_map, sizeof(map));
   bool moved = false;
   PRINTF("beam: row=%lu col=%lu dir=%c map[beam]='%c'\n", beam.row, beam.col,
          beam.dir, map[beam.row][beam.col]);
@@ -181,7 +183,7 @@ void solve_part1(void) {
       break;
     case '|':
       if ((DIR_DOWN == beam.dir) || (DIR_UP == beam.dir)) { /* ^ v */
-      } else { /* >|  or |< */
+      } else {                                              /* >|  or |< */
         if (beam.row > 0) {
           stack[stack_size++] =
               (cell_t){.row = beam.row - 1, .col = beam.col, .dir = DIR_UP};
@@ -191,7 +193,7 @@ void solve_part1(void) {
       break;
     case '-':
       if ((DIR_LEFT == beam.dir) || (DIR_RIGHT == beam.dir)) { /* >- or -< */
-      } else { /* ^- or v- */
+      } else {                                                 /* ^- or v- */
         if (beam.col > 0) {
           stack[stack_size++] =
               (cell_t){.row = beam.row, .col = beam.col - 1, .dir = DIR_LEFT};
@@ -216,13 +218,47 @@ void solve_part1(void) {
   } while (moved); /* while */
   print_data();
   PRINTF("energized cells num = %d\n", count_energized());
-  int ans = count_energized();
+  return count_energized();
+}
+/******************************************************************************/
+void solve_part1(void) {
+  beam = (cell_t){.row = 0, .col = 0, .dir = DIR_RIGHT};
+  int ans = solve_for_beam(beam);
   printf("%d\n", ans);
 } /* solve_part1() */
 /******************************************************************************/
 void solve_part2(void) {
-  /* solution of the part2 */
-  printf("%d\n", 0);
+  int ans, max_ans = -1;
+  for (size_t row_idx = 0; row_idx < rows_num; ++row_idx) {
+    beam = (cell_t){.row = row_idx, .col = 0, .dir = DIR_RIGHT};
+    ans = solve_for_beam(beam);
+    if (ans > max_ans) {
+      max_ans = ans;
+      printf("%d\n", max_ans);
+    }
+    beam = (cell_t){.row = row_idx, .col = cols_num - 1, .dir = DIR_LEFT};
+    ans = solve_for_beam(beam);
+    if (ans > max_ans) {
+      max_ans = ans;
+      printf("%d\n", max_ans);
+    }
+  }
+
+  for (size_t col_idx = 0; col_idx < cols_num; ++col_idx) {
+    beam = (cell_t){.col = col_idx, .row = 0, .dir = DIR_DOWN};
+    ans = solve_for_beam(beam);
+    if (ans > max_ans) {
+      max_ans = ans;
+      printf("%d\n", max_ans);
+    }
+    beam = (cell_t){.col = col_idx, .row = rows_num - 1, .dir = DIR_UP};
+    ans = solve_for_beam(beam);
+    if (ans > max_ans) {
+      max_ans = ans;
+      printf("%d\n", max_ans);
+    }
+  }
+  // printf("%d\n", max_ans);
 } /* solve_part2() */
 /******************************************************************************/
 int main(int argc, char *argv[]) {
