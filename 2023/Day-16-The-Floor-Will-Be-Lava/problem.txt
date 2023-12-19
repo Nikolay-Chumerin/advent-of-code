@@ -32,8 +32,7 @@ You note the layout of the contraption (your puzzle input). For example:
 .|....-|.\
 ..//.|....
 
-The beam enters in the top-left corner from the left and heading to the right.
-Then, its behavior depends on what it encounters as it moves:
+The beam enters in the top-left corner from the left and heading to the right. Then, its behavior depends on what it encounters as it moves:
 
  - If the beam encounters empty space (.), it continues in the same direction.
  - If the beam encounters a mirror (/ or \), the beam is reflected 90 degrees
