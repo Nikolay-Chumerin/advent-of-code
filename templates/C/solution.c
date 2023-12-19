@@ -26,11 +26,18 @@ void print_data(void) {
 #define print_data(_) {}
 #endif  /* DEBUG */
 /******************************************************************************/
-void trim(char *line) {
-  int line_len = strlen(line);
-  while (line_len && (line[line_len - 1] <= ' ')) {
-    line[--line_len] = 0;
-  }
+size_t trim(char *s) {
+  size_t i = 0;
+  while (s[i] && (s[i] <= ' '))
+    ++i;
+  size_t j = 0;
+  while (s[i])
+    s[j++] = s[i++];
+  s[j] = 0;
+  while (j && (s[j] <= ' '))
+    --j;
+  s[++j] = 0;
+  return j;
 } /* trim(.) */
 /******************************************************************************/
 int read_input_data(const char *input_file_path) {
