@@ -8,4 +8,4 @@ crn{x>2662:A,R}
 in{s<1351:px,qqz}
 qqz{s>2770:qs,m<1801:hdj,R}
 gd{a>3333:R,R}
-hdj{m>838:A,pv}
+hdj{m>838:A,pv} 
