@@ -1,10 +1,11 @@
-ifndef VERBOSE
-.SILENT:
-endif
+# ifndef VERBOSE
+# .SILENT:
+# endif
 
 # Compiler flags
 CC     = gcc
-CFLAGS = -Wall -Werror -Wextra -lm
+CFLAGS = -Wall -Werror -Wextra
+LDFLAGS = -lm
 
 # Project files
 SRCS = solution.c
@@ -29,20 +30,20 @@ remake: clean all
 
 # Release rules
 release: $(SRCS)
-	gcc $(SRCS) $(RELCFLAGS) -o $(EXE)
+	gcc $(SRCS) $(RELCFLAGS) -o $(EXE) $(CFLAGS) $(LDFLAGS)
 
 # Debug rules
 debug: $(SRCS)
-	gcc $(SRCS) $(DBGCFLAGS) -o $(EXE)
+	gcc $(SRCS) $(DBGCFLAGS) -o $(EXE) $(CFLAGS) $(LDFLAGS)
 
 # Test rules
-all_tests: solution debug
+all_tests: debug
 	for i in $(TEST_FILES); do \
 		echo "Running solution on the $$i file as input"; \
 		./solution $$i; \
 	done
 
-test%: solution debug
+test%: debug
 	echo "Running solution on the $@.txt file as input"; \
 	./solution $@.txt
 

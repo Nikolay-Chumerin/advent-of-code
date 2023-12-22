@@ -4,6 +4,19 @@
     {
       "type": "lldb",
       "request": "launch",
+      "name": "Debug [input]",
+      "program": "${fileDirname}/solution",
+      "args": ["input.txt"],
+      "cwd": "${fileDirname}",
+      "linux": {
+        "MIMode": "gdb",
+        "miDebuggerPath": "/usr/bin/gdb"
+      },
+    },
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
       "name": "Debug [test0]",
       "program": "${fileDirname}/solution",
       "args": ["test0.txt"],
