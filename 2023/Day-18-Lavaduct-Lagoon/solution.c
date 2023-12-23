@@ -41,7 +41,7 @@ void print_field(const bool *field, const size_t w, const size_t h) {
 typedef struct {
   char dir;
   int len;
-  unsigned int r, g, b;
+  unsigned int rgb;
 } segment_t;
 typedef struct {
   int x, y;
@@ -80,11 +80,11 @@ int read_input_data(const char *input_file_path) {
     if (!fgets(line, sizeof(line), file))
       break;
     trim(line);
-    sscanf(line, "%c %d (#%02x%02x%02x)", &segments[n].dir, &segments[n].len,
-           &segments[n].r, &segments[n].g, &segments[n].b);
+    sscanf(line, "%c %d (#%06x)", &segments[n].dir, &segments[n].len,
+           &segments[n].rgb);
 
-    PRINTF("'%s' -> %c %d (#%02x%02x%02x)\n", line, segments[n].dir,
-           segments[n].len, segments[n].r, segments[n].g, segments[n].b);
+    PRINTF("'%s' -> %c %d (#%06x)\n", line, segments[n].dir, segments[n].len,
+           segments[n].rgb);
     ++n;
   } /* loop over lines */
   fclose(file);
@@ -139,7 +139,18 @@ void shift_by(const int dx, const int dy) {
   }
 } /* shift_by(..) */
 /******************************************************************************/
-bool inside(const int x, const int y) {
+void convert_rgb_to_segments() {
+  const char idx2dir[4] = "RDLU";
+  for (size_t i = 0; i < segments_num; ++i) {
+    unsigned int rgb = segments[i].rgb;
+    segments[i].len = rgb >> 4;
+    segments[i].dir = idx2dir[rgb & 0x03];
+    PRINTF("'%06x' -> %c %d\n", segments[i].rgb, segments[i].dir,
+           segments[i].len);
+  }
+} /* convert_rgb_to_segments(..) */
+/******************************************************************************/
+bool inside(const double x, const double y) {
   double total_angle = 0.0;
   for (size_t i = 1; i <= segments_num; ++i) {
     const double prev_vx = polygone[i - 1].x - x;
@@ -151,7 +162,7 @@ bool inside(const int x, const int y) {
     total_angle += angle;
   }
   const bool ans = fabs(total_angle - 2.0 * M_PI) < EPS;
-  PRINTF("(%d,%d) total_anlge=%f  %c\n", x, y, total_angle, ans ? '#' : '.');
+  PRINTF("(%f,%f) total_anlge=%f  %c\n", x, y, total_angle, ans ? '#' : '.');
   return ans;
 } /* inside(..) */
 /******************************************************************************/
@@ -159,7 +170,7 @@ void solve_part1(void) {
   make_polygone();
   const size_t field_width = max_x - min_x + 1;
   const size_t field_height = max_y - min_y + 1;
-
+  PRINTF("field_width=%lu  field_height=%lu\n", field_width, field_height);
   bool field[field_height][field_width];
   memset(field, false, sizeof(field));
   int x = 0, y = 0;
@@ -202,9 +213,81 @@ void solve_part1(void) {
   printf("%d\n", sum);
 } /* solve_part1() */
 /******************************************************************************/
+int comp(const void *a, const void *b) { return *(int *)a - *(int *)b; }
+/******************************************************************************/
+size_t get_unique(int *arr, const size_t len) {
+  qsort(arr, len, sizeof(int), comp);
+  size_t out_len = 1;
+  for (size_t i = 1; i < len; ++i) {
+    if (arr[i] != arr[out_len - 1]) {
+      arr[out_len++] = arr[i];
+    }
+  }
+  return out_len;
+} /* get_unique(..) */
+/******************************************************************************/
 void solve_part2(void) {
-  /* solution of the part2 */
-  printf("%d\n", 0);
+  convert_rgb_to_segments();
+  make_polygone();
+  PRINTF("segments_num=%lu\n", segments_num);
+  int unique_x[segments_num + 1];
+  int unique_y[segments_num + 1];
+  for (size_t i = 0; i < segments_num; ++i) {
+    unique_x[i] = polygone[i].x;
+    unique_y[i] = polygone[i].y;
+  }
+  const size_t unique_x_num = get_unique(unique_x, segments_num);
+  const size_t unique_y_num = get_unique(unique_y, segments_num);
+  PRINTF("unique_x_num=%lu\n", unique_x_num);
+  PRINTF("unique_y_num=%lu\n", unique_y_num);
+
+  bool in_tile[unique_y_num + 1][unique_x_num + 1];
+  memset(in_tile, false, sizeof(in_tile));
+
+  unsigned long ans = 0;
+  for (size_t r = 0; r < unique_y_num - 1; ++r) {
+    const long dy = unique_y[r + 1] - unique_y[r] + 1;
+    const double cy = (double)(unique_y[r + 1] + unique_y[r]) / 2.0;
+    for (size_t c = 0; c < unique_x_num - 1; ++c) {
+      const long dx = unique_x[c + 1] - unique_x[c] + 1;
+      const double cx = (double)(unique_x[c] + unique_x[c + 1]) / 2.0;
+      in_tile[r][c] = inside(cx, cy);
+      ans += in_tile[r][c] * dx * dy;
+    } /* c-loop*/
+  }   /* r-loop */
+
+  /* check doubled horizontal segments (interior) */
+  for (size_t c = 0; c < unique_x_num; ++c) {
+    const long dx = unique_x[c + 1] - unique_x[c] - 1;
+    for (size_t r = 1; r < unique_y_num; ++r) {
+      if (in_tile[r][c] && in_tile[r - 1][c]) {
+        ans -= dx;
+      }
+    } /* r-loop */
+  }   /* c-loop*/
+
+  /* check doubled vertical segments (interior) */
+  for (size_t r = 0; r < unique_y_num; ++r) {
+    const long dy = unique_y[r + 1] - unique_y[r] - 1;
+    for (size_t c = 0; c < unique_x_num; ++c) {
+      if (in_tile[r][c] && in_tile[r][c + 1]) {
+        ans -= dy;
+      }
+    } /* c-loop*/
+  }   /* r-loop */
+
+  /* check doubled vertical segments (interior) */
+  for (size_t r = 0; r <= unique_y_num; ++r) {
+    for (size_t c = 0; c <= unique_x_num; ++c) {
+      int adj_tiles_num = in_tile[r][c] + ((r > 0) && in_tile[r - 1][c]) +
+                          ((c > 0) && in_tile[r][c - 1]) +
+                          ((r > 0) && (c > 0) && in_tile[r - 1][c - 1]);
+      // printf("r=%lu  c=%lu  adj_tiles_num=%d\n", r, c, adj_tiles_num);
+      ans -= (adj_tiles_num > 1) * (adj_tiles_num - 1);
+    } /* c-loop*/
+  }   /* r-loop */
+
+  printf("%lu\n", ans);
 } /* solve_part2() */
 /******************************************************************************/
 int main(int argc, char *argv[]) {
